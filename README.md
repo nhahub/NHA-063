@@ -1,4 +1,4 @@
-# ChatOBoto - English Learning Chatbot
+# English Learning Chatbot
 
 An intelligent multi-agent English learning chatbot built with Streamlit and LangGraph. ChatOBoto helps users practice English through conversational interactions, grammar explanations, and factual question answering.
 
@@ -195,6 +195,7 @@ The system classifies user input into three intents:
 ## 🚧 Known Limitations
 
 - Grammar correction tool is currently a placeholder (returns "corrected grammer sentance")
+
 
 
 
