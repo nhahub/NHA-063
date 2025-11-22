@@ -69,7 +69,7 @@ User Input → Language Detection → Translation (if Arabic) → Intent Classif
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/nhahub/NHA-063.git
    cd chatbot
    ```
 
@@ -195,19 +195,6 @@ The system classifies user input into three intents:
 ## 🚧 Known Limitations
 
 - Grammar correction tool is currently a placeholder (returns "corrected grammer sentance")
-- Translation only supports Arabic → English
-- Status messages are displayed during processing but may not cover all edge cases
 
-## 📝 License
-
-[Add your license here]
-
-## 🤝 Contributing
-
-[Add contribution guidelines here]
-
-## 📧 Contact
-
-[Add contact information here]
 
 
