@@ -7,7 +7,7 @@ def login():
 
     if st.session_state.state == "logging in":
 
-        st.title("Welcome to ChatOBoto")
+        st.title("Welcome to our English Learning Chatbot")
         st.header("Login:")
         username = st.text_input(label="User or Email:", value="")
         password = st.text_input(label="password:", value="", type="password")
@@ -20,7 +20,7 @@ def login():
             st.rerun()
 
     if st.session_state.state == "signing up":
-        st.title("Welcome to ChatOBoto")
+        st.title("Welcome to our English Learning Chatbot")
         st.header("Signup:")
         username = st.text_input(label="User_name or Email:", value="")
         name = st.text_input(label="name", value="")
@@ -40,4 +40,5 @@ def logout():
     st.rerun()   
 
 def add_chat(title:str):
+
     st.session_state.db_app.add_chat(title = title)
