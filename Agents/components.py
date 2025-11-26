@@ -6,12 +6,14 @@ from Agents.Rag import Rag
 import streamlit as st
 from langchain_core.tools import tool
 from langchain.chat_models import init_chat_model
+from groq import Groq
+from gradio_client import Client
 
 Hf_token = st.secrets["HF_token"]
 travily_token = st.secrets["Travily_token"]
 gemini_key = st.secrets["Gemini_key"]
-
-
+groq_api_key = st.secrets["Groq_api_key"]
+GC_mdl = Client("Hager-Mohamed/Gemma_Grammar_Correction")
 
 @tool
 def get_grammar_correction(statment: str) -> str:
@@ -30,13 +32,14 @@ def get_grammar_correction(statment: str) -> str:
         contains grammar mistakes or could be phrased more naturally.
         The tool returns ONLY the corrected sentence with no extra text.
     """
-    print('\n==========================grammer check tool \n')
-    return "corrected grammer sentance"
+    raw_output = GC_mdl.predict(statment, api_name="/correct")
+    res = re.sub(r"Corrected:", "", raw_output, flags=re.DOTALL).strip()
+    return res
 
 tools = [get_grammar_correction]
 llm = init_chat_model("google_genai:gemini-2.0-flash", api_key = gemini_key)
 llm_with_tools = llm.bind_tools(tools, enforce_tool_use=False)
-
+groq_client = Groq(api_key=groq_api_key)
 
 grammer_explain = Rag()
 client = InferenceClient(
@@ -68,22 +71,53 @@ def call_model(prompt, model_name = "HuggingFaceTB/SmolLM3-3B",  temperature=0.5
 def classify_input(state:State) -> State:
 
     prompt = f"""
-    You are a text classifier for a chatbot that helps users practice English.
+        You are a text classifier for an English practice chatbot.
 
-    Classify the user's input as:
-    - language: "english" or "arabic"
-    - intent: one of ["chat", "grammar_question", "fact_question"]
-    GENERATE ONLY ONE RESPONCE
+        Classify the user's input based on:
 
-    Respond in JSON ONLY:
-    {{"language": "...", "intent": "..."}}.
+        1. LANGUAGE:
+        - "english": If the input is primarily in English (ignore minor grammar mistakes)
+        - "arabic": If the input is primarily in Arabic
 
-    User input: "{state['user_input']}"
-    """
-    res = call_model(prompt=prompt, model_name="HuggingFaceTB/SmolLM3-3B")
+        2. INTENT:
+        - "grammar_question": User is ASKING for explanation of a grammar rule, concept, or asking why something is correct/incorrect
+            Examples: "Why do we use 'have been'?", "What's the difference between past simple and present perfect?", "Can you explain when to use 'a' vs 'an'?"
+        
+        - "fact_question": User is asking for factual information about the world, definitions, or knowledge
+            Examples: "What is the capital of France?", "Who invented the telephone?", "What does 'serendipity' mean?"
+        
+        - "chat": User is having a conversation, sharing experiences, or making statements (even with grammar mistakes)
+            Examples: "Yesterday I goes to the market", "I like pizza", "How are you?", "Tell me about your day"
 
+        IMPORTANT:
+        - Ignore grammar mistakes - they don't indicate a grammar question
+        - A grammar question is ONLY when the user explicitly asks about a grammar rule or concept
+        - If the user is simply speaking/writing (even incorrectly), classify as "chat"
+        - If unsure between fact_question and chat, default to "chat"
+
+        Respond in JSON ONLY (no markdown, no extra text):
+        {{"language": "...", "intent": "..."}}
+
+        User input: "{state['user_input']}"
+        """
+
+    chat_completion = groq_client.chat.completions.create(
+        messages=[
+
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
+        temperature= 0.3,
+        top_p= 0.7,
+        stream= False,
+        model="qwen/qwen3-32b")
+    content = chat_completion.choices[0].message.content    
+    if "<think>" in content:
+        content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
     try:
-        res = json.loads(call_model(prompt=prompt, model_name="HuggingFaceTB/SmolLM3-3B"))
+        res = json.loads(content)
         state["intent"], state["language"] = res["intent"], res["language"]
         if state["language"] == "arabic" : state['status_message'] = "🌐 Translator agent working..."
         
@@ -133,6 +167,7 @@ def grammar_explanation_Rag(state: State) -> State:
 
 
 def chat(state: State)-> State:
+    
     query = state['user_input'] if state['language'] == 'english' else state['translated_input']
     state['messages'].append({"role": "user","content": query})
     state['messages'] = [llm_with_tools.invoke(state["messages"])]
