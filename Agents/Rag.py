@@ -1,10 +1,11 @@
 import chromadb 
 from huggingface_hub import InferenceClient
 import streamlit as st
+import re
 
 class Rag:
 
-    def __init__(self, model = 'ibm-granite/granite-4.0-h-350m'):
+    def __init__(self):
          
         token = st.secrets["HF_token"]
         self.client = InferenceClient(
@@ -60,15 +61,17 @@ class Rag:
         {"role": "user", "content": prompt},
         ]
 
-        # print(
-        #     f"\n hey there im using question answer model for the rag\n","using this context:{reterival}"
-        # )
+
         completion = self.client.chat.completions.create(
-            model="zai-org/GLM-4.6:novita",
+            # model="zai-org/GLM-4.6:novita",
+            model = "HuggingFaceTB/SmolLM3-3B",
             messages=messages)
         
         # completion.choices[0].message
-        return  (completion.choices[0].message.content +
+        content = completion.choices[0].message.content 
+        if "<think>" in content:
+            content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+        return  (content+
                 f"\n\n:blue-background[The answer was driven from :violet[{book}]]")
 
 
