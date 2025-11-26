@@ -3,11 +3,26 @@ from langgraph.graph import StateGraph, START, END
 from Agents.state import State
 from langgraph.prebuilt import ToolNode, tools_condition
 
+from langgraph.checkpoint.memory import InMemorySaver
+
+memory = InMemorySaver()
 
 # initial node 
 def init_node(state):
     # Modify whatever you want
+    # Reset fields that should not persist between turns
     state['status_message'] = "🔍 Classifying your input..."
+    state['intent'] = None  # Reset intent
+    state['language'] = None  # Reset language
+    state['translated_input'] = None  # Reset translation if you have it
+    # resoponses
+    state['grammar_explanation'] = None
+    state['fact_answer'] = None
+    state['chat_response'] = None
+
+    # final response
+    state['final_output'] = None
+    # Keep chat_history intact - don't reset it
     return state
 
 
@@ -89,7 +104,7 @@ builder.add_edge("tools", "chat_response_node")
 builder.add_edge("final_composer_node", END)
 
 
-graph = builder.compile()
+graph = builder.compile(checkpointer=memory)
 
 # ## get graph img:
 # png_bytes = graph.get_graph().draw_mermaid_png()
