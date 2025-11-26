@@ -1,6 +1,4 @@
 import streamlit as st
-from Grammer_correction import grammer_correction
-from responce import responce
 from Agents.graph import graph
 import time
 from Agents.state import State
@@ -31,6 +29,7 @@ def chat_page(chat_id):
     st.session_state.chat_bot_msgs = st.session_state.db_app.get_chat_bot_msgs(chat_id)
     
     st.session_state.curr_chat_id = chat_id
+    config ={ 'configurable': {'thread_id' : f'{st.session_state.curr_chat_id}'}}
 
 
     avatars = {
@@ -60,7 +59,7 @@ def chat_page(chat_id):
         final_ans = ''
         state['user_input'] =  prompt
         # Stream node-by-node updates
-        for event in graph.stream(state, stream_mode="values"):
+        for event in graph.stream(state, stream_mode="values", config=config):
 
             # If node updates its status, show it live
             if "status_message" in event and event["status_message"]:
@@ -70,6 +69,8 @@ def chat_page(chat_id):
             if "final_output" in event and event["final_output"]:
                 time.sleep(1)
                 final_ans = event["final_output"]
+                state['status_message'] = None
+        
                 
 
         # Clear the status text once workflow completes
